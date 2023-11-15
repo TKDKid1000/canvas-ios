@@ -20,6 +20,7 @@ import UIKit
 import MobileCoreServices
 import VisionKit
 import UniformTypeIdentifiers
+import PDFKit
 
 public enum FilePickerSource: Int, CaseIterable {
     case camera, library, files, audio, documentScan
@@ -378,14 +379,14 @@ extension FilePickerViewController: UITableViewDelegate, UITableViewDataSource {
 extension FilePickerViewController: VNDocumentCameraViewControllerDelegate {
     public func documentCameraViewController(_ controller: VNDocumentCameraViewController, didFinishWith scan: VNDocumentCameraScan) {
         controller.dismiss(animated: true)
+        let pdfDocument = PDFDocument()
         for i in 0..<scan.pageCount {
-            do {
-                let image = scan.imageOfPage(at: i)
-                add(try image.write())
-            } catch {
-                showError(error)
-            }
+            let image = scan.imageOfPage(at: i)
+            guard let pdfPage = PDFPage(image: image) else { continue }
+            pdfDocument.insert(pdfPage, at: i)
         }
+        guard let url = pdfDocument.documentURL else { return showError(message: "PDF document URL is null.") }
+        add(url)
     }
 }
 
